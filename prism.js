@@ -15,7 +15,7 @@
 // Private helper vars
 var lang = /\blang(?:uage)?-(?!\*)(\w+)\b/i;
 
-var _ = self.Prism = {
+var _ = window.Prism = {
 	util: {
 		type: function (o) { 
 			return Object.prototype.toString.call(o).match(/\[object (\w+)\]/)[1];
@@ -147,36 +147,15 @@ var _ = self.Prism = {
 		
 		_.hooks.run('before-highlight', env);
 		
-		if (async && self.Worker) {
-			var worker = new Worker(_.filename);	
-			
-			worker.onmessage = function(evt) {
-				env.highlightedCode = Token.stringify(JSON.parse(evt.data), language);
+        env.highlightedCode = _.highlight(env.code, env.grammar, env.language)
 
-				_.hooks.run('before-insert', env);
+        _.hooks.run('before-insert', env);
 
-				env.element.innerHTML = env.highlightedCode;
-				
-				callback && callback.call(env.element);
-				_.hooks.run('after-highlight', env);
-			};
-			
-			worker.postMessage(JSON.stringify({
-				language: env.language,
-				code: env.code
-			}));
-		}
-		else {
-			env.highlightedCode = _.highlight(env.code, env.grammar, env.language)
+        env.element.innerHTML = env.highlightedCode;
 
-			_.hooks.run('before-insert', env);
+        callback && callback.call(element);
 
-			env.element.innerHTML = env.highlightedCode;
-			
-			callback && callback.call(element);
-			
-			_.hooks.run('after-highlight', env);
-		}
+        _.hooks.run('after-highlight', env);
 	},
 	
 	highlight: function (text, grammar, language) {
@@ -327,20 +306,6 @@ Token.stringify = function(o, language, parent) {
 	return '<' + env.tag + ' class="' + env.classes.join(' ') + '" ' + attributes + '>' + env.content + '</' + env.tag + '>';
 	
 };
-
-if (!self.document) {
-	// In worker
-	self.addEventListener('message', function(evt) {
-		var message = JSON.parse(evt.data),
-		    lang = message.language,
-		    code = message.code;
-		
-		self.postMessage(JSON.stringify(_.tokenize(code, _.languages[lang])));
-		self.close();
-	}, false);
-	
-	return;
-}
 
 // Get current script and highlight
 var script = document.getElementsByTagName('script');
@@ -507,7 +472,7 @@ if (Prism.languages.markup) {
 
 (function(){
 
-if (!self.Prism || !self.document || !document.querySelector) {
+if (!window.Prism || !window.document || !document.querySelector) {
 	return;
 }
 
